@@ -20,40 +20,45 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDatabase);
   }
 
-
   Future<void> _createDatabase(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE Notes (
-        id INTEGER PRIMARY KEY,
-        title TEXT,
-        description TEXT,
-        dueto TEXT
-      )
-    ''');
+    CREATE TABLE Notes (
+      id INTEGER PRIMARY KEY,
+      title TEXT,
+      description TEXT,
+      completed INTEGER  -- New column
+    )
+  ''');
   }
+
   Future<int> insertNote(Notes note) async {
     try {
       Database db = await instance.database;
-      return await db.insert('Notes', note.toMap());
+
+      // Omit the 'id' field when inserting, as it's auto-incremented
+      Map<String, dynamic> noteMap = note.toMap();
+      noteMap.remove('id');
+
+      return await db.insert('Notes', noteMap);
     } catch (e) {
       print("Error inserting note: $e");
       return -1; // Return a value that indicates failure
     }
   }
 
-
   Future<List<Notes>> getAllNotes() async {
     Database db = await instance.database;
     List<Map<String, dynamic>> maps = await db.query('Notes');
     return List.generate(maps.length, (i) {
       return Notes(
-        // id: maps[i]['id'],
+        id: maps[i]['id'],
         Notetitle: maps[i]['title'],
         NoteDescription: maps[i]['description'],
-        // You may want to convert the 'dueto' string to a DateTime if needed
+        completed: maps[i]['completed'] == 1,  // Convert 1 to true, 0 to false
       );
     });
   }
+
   Future<int> deleteNote(int id) async {
     try {
       Database db = await instance.database;
@@ -62,5 +67,14 @@ class DatabaseHelper {
       print("Error deleting note: $e");
       return -1; // Return a value that indicates failure
     }
+  }
+  Future<void> toggleNoteCompletionStatus(int noteId) async {
+    final db = await database;
+    await db.update(
+      'notes',
+      {'completed': true}, // you may need to adjust this based on your schema
+      where: 'id = ?',
+      whereArgs: [noteId],
+    );
   }
 }
