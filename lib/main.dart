@@ -46,6 +46,19 @@ class _NavigationExampleState extends State<NavigationExample> {
       appBar: AppBar(
         title: Text("ToDo App"),
         centerTitle: true,
+        actions: [
+          if (currentPageIndex == 0)
+            IconButton(
+              onPressed: () {
+                // Navigate to the AddNoteScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddNoteScreen()),
+                );
+              },
+              icon: Icon(Icons.add),
+            ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -73,18 +86,6 @@ class _NavigationExampleState extends State<NavigationExample> {
           CompletedNotesPage(),
         ],
       ),
-      floatingActionButton: currentPageIndex == 0
-          ? FloatingActionButton(
-        onPressed: () {
-          // Navigate to the AddNoteScreen
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddNoteScreen()),
-          );
-        },
-        child: Icon(Icons.add),
-      )
-          : null,
     );
   }
 }
@@ -97,36 +98,56 @@ class AllNotesPage extends StatefulWidget {
 }
 
 class _AllNotesPageState extends State<AllNotesPage> {
-  List<Notes> notes = [];
+  Future<List<Notes>>? notesFuture;
 
   @override
   void initState() {
     super.initState();
-    loadAllNotes();
+    notesFuture = loadAllNotes();
   }
 
-  Future<void> loadAllNotes() async {
+  Future<List<Notes>> loadAllNotes() async {
     List<Notes> allNotes = await DatabaseHelper.instance.getAllNotes();
-    setState(() {
-      notes = allNotes;
-    });
+    return allNotes;
+  }
+
+  @override
+  void didUpdateWidget(covariant AllNotesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload notes when the widget is updated
+    notesFuture = loadAllNotes();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: <Widget>[
-          for (var note in notes)
-            Card(
-              child: ListTile(
-                title: Text(note.Notetitle),
-                subtitle: Text(note.NoteDescription),
+    return FutureBuilder<List<Notes>>(
+      future: notesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          List<Notes> notes = snapshot.data ?? [];
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: <Widget>[
+                  for (var note in notes)
+                    Card(
+                      child: ListTile(
+                        title: Text(note.Notetitle),
+                        subtitle: Text(note.NoteDescription),
+                      ),
+                    ),
+                ],
               ),
             ),
-        ],
-      ),
+          );
+        }
+      },
     );
   }
 }

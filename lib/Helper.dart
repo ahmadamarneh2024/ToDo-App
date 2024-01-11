@@ -41,6 +41,7 @@ class DatabaseHelper {
     }
   }
 
+
   Future<List<Notes>> getAllNotes() async {
     Database db = await instance.database;
     List<Map<String, dynamic>> maps = await db.query('Notes');
@@ -52,5 +53,14 @@ class DatabaseHelper {
         // You may want to convert the 'dueto' string to a DateTime if needed
       );
     });
+  }
+  Future<int> deleteNote(int id) async {
+    try {
+      Database db = await instance.database;
+      return await db.delete('Notes', where: 'id = ?', whereArgs: [id]);
+    } catch (e) {
+      print("Error deleting note: $e");
+      return -1; // Return a value that indicates failure
+    }
   }
 }

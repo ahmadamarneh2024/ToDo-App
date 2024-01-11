@@ -15,7 +15,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
 //  TextEditingController IdController = TextEditingController();
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
- // TextEditingController dueToController = TextEditingController();
+  // TextEditingController dueToController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               controller: descriptionController,
               decoration: InputDecoration(labelText: 'Description'),
             ),
-           /* TextField(
+            /* TextField(
               controller: dueToController,
               decoration: InputDecoration(labelText: 'Due To'),
             ),*/
@@ -49,15 +49,15 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               onPressed: () async {
                 // Create a new note with the entered values
                 Notes newNote = Notes(
-             //     id: int.parse(IdController.text),
+                  //     id: int.parse(IdController.text),
                   Notetitle: titleController.text,
                   NoteDescription: descriptionController.text,
-                 // Dueto: DateTime.parse(dueToController.text),
+                  // Dueto: DateTime.parse(dueToController.text),
                 );
                 print("Button Pressed");
                 print("Title: ${titleController.text}");
                 print("Description: ${descriptionController.text}");
-             //   print("Due To: ${dueToController.text}");
+                //   print("Due To: ${dueToController.text}");
                 // Insert the new note into the database
                 await DatabaseHelper.instance.insertNote(newNote);
 
