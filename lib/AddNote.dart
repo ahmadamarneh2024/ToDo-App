@@ -6,7 +6,10 @@ import 'package:todo_app/Helper.dart';
 import 'package:todo_app/main.dart';
 
 class AddNoteScreen extends StatefulWidget {
-  const AddNoteScreen({Key? key}) : super(key: key);
+  final VoidCallback onNoteAdded;
+
+  const AddNoteScreen({Key? key, required this.onNoteAdded}) : super(key: key);
+
 
   @override
   _AddNoteScreenState createState() => _AddNoteScreenState();
@@ -15,16 +18,21 @@ class AddNoteScreen extends StatefulWidget {
 class _AddNoteScreenState extends State<AddNoteScreen> {
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
- // TextEditingController dueToController = TextEditingController(); // New controller for Due To
+  bool isUrgent = false; // New boolean for Urgent
+  Future<void> _saveNote() async {
+    // Save the note to the database
 
-  //bool isUrgent = false; // New boolean for Urgent
+    // Call the onNoteAdded callback to trigger a refresh in AllNotesPage
+    widget.onNoteAdded();
 
+    // Close the screen
+    Navigator.of(context).pop();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Note'),
-      ),
+      // ... existing code ...
+
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -38,7 +46,15 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
               controller: descriptionController,
               decoration: InputDecoration(labelText: 'Description'),
             ),
-
+            CheckboxListTile(
+              title: Text('Urgent'),
+              value: isUrgent,
+              onChanged: (value) {
+                setState(() {
+                  isUrgent = value ?? false;
+                });
+              },
+            ),
             SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: () async {
@@ -46,10 +62,14 @@ class _AddNoteScreenState extends State<AddNoteScreen> {
                 Notes newNote = Notes(
                   Notetitle: titleController.text,
                   NoteDescription: descriptionController.text,
+                  urgent: isUrgent,
                 );
 
                 // Insert the new note into the database
                 await DatabaseHelper.instance.insertNote(newNote);
+
+                // Trigger the onNoteAdded callback to refresh the UI in AllNotesPage
+                widget.onNoteAdded();
 
                 // Navigate back to the previous screen
                 Navigator.pop(context);

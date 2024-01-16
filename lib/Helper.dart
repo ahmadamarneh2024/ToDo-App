@@ -26,10 +26,12 @@ class DatabaseHelper {
       id INTEGER PRIMARY KEY,
       title TEXT,
       description TEXT,
-      completed INTEGER  -- New column
+      completed INTEGER DEFAULT 0,
+      urgent INTEGER DEFAULT 0  -- New column with a default value of 0
     )
   ''');
   }
+
 
   Future<int> insertNote(Notes note) async {
     try {
@@ -46,6 +48,7 @@ class DatabaseHelper {
     }
   }
 
+
   Future<List<Notes>> getAllNotes() async {
     Database db = await instance.database;
     List<Map<String, dynamic>> maps = await db.query('Notes');
@@ -54,7 +57,8 @@ class DatabaseHelper {
         id: maps[i]['id'],
         Notetitle: maps[i]['title'],
         NoteDescription: maps[i]['description'],
-        completed: maps[i]['completed'] == 1,  // Convert 1 to true, 0 to false
+        completed: maps[i]['completed'] == 1,
+        urgent: maps[i]['urgent'] == 1,
       );
     });
   }

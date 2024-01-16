@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todo_app/NoteClass.dart';
 import 'package:todo_app/Helper.dart';
-import 'package:todo_app/main.dart';
-import 'AddNote.dart';
+import 'package:todo_app/AddNote.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +19,7 @@ void main() async {
     home: const NavigationExample(),
   ));
 }
+
 class NavigationExample extends StatefulWidget {
   const NavigationExample({Key? key}) : super(key: key);
 
@@ -29,7 +29,18 @@ class NavigationExample extends StatefulWidget {
 
 class _NavigationExampleState extends State<NavigationExample> {
   int currentPageIndex = 0;
+  late Future<List<Notes>> notesFuture; // Declare notesFuture here
 
+  @override
+  void initState() {
+    super.initState();
+    notesFuture = loadAllNotes();
+  }
+
+  Future<List<Notes>> loadAllNotes() async {
+    List<Notes> allNotes = await DatabaseHelper.instance.getAllNotes();
+    return allNotes;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,8 +54,18 @@ class _NavigationExampleState extends State<NavigationExample> {
                 // Navigate to the AddNoteScreen
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AddNoteScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => AddNoteScreen(
+                      onNoteAdded: () {
+                        // Trigger a refresh of the notes in the AllNotesPage
+                        setState(() {
+                          notesFuture = loadAllNotes();
+                        });
+                      },
+                    ),
+                  ),
                 );
+
               },
               icon: const Icon(Icons.add),
             ),
@@ -81,8 +102,6 @@ class _NavigationExampleState extends State<NavigationExample> {
 }
 
 class AllNotesPage extends StatefulWidget {
-  const AllNotesPage({Key? key}) : super(key: key);
-
   @override
   _AllNotesPageState createState() => _AllNotesPageState();
 }
@@ -102,54 +121,59 @@ class _AllNotesPageState extends State<AllNotesPage> {
   }
 
   @override
-  void didUpdateWidget(covariant AllNotesPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Reload notes when the widget is updated
-    notesFuture = loadAllNotes();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Notes>>(
-        key: UniqueKey(),
-        future: notesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator();
-          } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
-          } else {
-            List<Notes> notes = snapshot.data ?? [];
+      key: UniqueKey(),
+      future: notesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          List<Notes> notes = snapshot.data ?? [];
 
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: <Widget>[
-                    for (var note in notes)
-                      Card(
-                        child: ListTile(
-                          title: Text(note.Notetitle),
-                          subtitle: Text(note.NoteDescription),
-                          onTap: () {
-                            // Show dialog to ask the user to set note as completed
-                            showConfirmationDialog(note);
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: <Widget>[
+                  for (var note in notes)
+                    Card(
+                      child: ListTile(
+                        title: Text(note.Notetitle),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(note.NoteDescription),
+                            Text(
+                              'Urgent: ${note.urgent ? 'Yes' : 'No'}',
+                              style: TextStyle(
+                                color: note.urgent ? Colors.red : Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        tileColor: note.urgent ? Colors.red.withOpacity(0.3) : null,
+                        onTap: () {
+                          showConfirmationDialog(note);
+                        },
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            deleteNoteAndReload(note);
                           },
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () {
-                              // Delete the note when the delete button is pressed
-                              deleteNoteAndReload(note);
-                            },
-                          ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
-            );
-          }
-        });
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> showConfirmationDialog(Notes note) async {
@@ -204,6 +228,7 @@ class _AllNotesPageState extends State<AllNotesPage> {
     }
   }
 }
+
 class CompletedNotesPage extends StatelessWidget {
   const CompletedNotesPage({Key? key}) : super(key: key);
 
@@ -230,7 +255,7 @@ class CompletedNotesPage extends StatelessWidget {
               child: Column(
                 children: <Widget>[
                   for (var note in completedNotes)
-                    Card(
+                    Card(color: Colors.green,
                       child: ListTile(
                         title: Text(note.Notetitle),
                         subtitle: Text(note.NoteDescription),
